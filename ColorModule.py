@@ -24,7 +24,7 @@ class ColorFinder:
         To intialize Trackbars . Need to run only once
         """
         cv2.namedWindow("TrackBars")
-        cv2.resizeWindow("TrackBars", 640, 240)
+        cv2.resizeWindow("TrackBars", 640, 260)
         cv2.createTrackbar("Hue Min", "TrackBars", 0, 179, self.empty)
         cv2.createTrackbar("Hue Max", "TrackBars", 179, 179, self.empty)
         cv2.createTrackbar("Sat Min", "TrackBars", 0, 255, self.empty)
@@ -116,55 +116,18 @@ def main():
         print(repr(err))
         exit(1)
 
-    runtime_params = sl.RuntimeParameters()
-
-    obj_param = sl.ObjectDetectionParameters()
-    obj_param.enable_mask_output = False  # TEST THIS
-    obj_param.detection_model = sl.DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE
-    # obj_param.prediction_timeout_s = 0.1  # TEST THIS
-    # obj_param.image_sync = True # TEST THIS
-    obj_param.allow_reduced_precision_inference = True  # TEST THIS
-    # obj_param.filtering_mode = sl.OBJECT_FILTERING_MODE.NMS3D_PER_CLASS
-    obj_param.enable_tracking = True
-    if obj_param.enable_tracking:
-        positional_tracking_param = sl.PositionalTrackingParameters()
-        positional_tracking_param.set_as_static = True
-        positional_tracking_param.set_floor_as_origin = True
-        zed.enable_positional_tracking(positional_tracking_param)
-
-    err = zed.enable_object_detection(obj_param)
-    if err != sl.ERROR_CODE.SUCCESS:
-        print(repr(err))
-        zed.close()
-        exit(1)
-
-    objects = sl.Objects()
-    obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
-    obj_runtime_param.detection_confidence_threshold = 40
-    obj_runtime_param.object_class_filter = [
-        sl.OBJECT_CLASS.PERSON, sl.OBJECT_CLASS.SPORT]
-    obj_runtime_param.object_class_detection_confidence_threshold = {
-        sl.OBJECT_CLASS.PERSON: 60, sl.OBJECT_CLASS.SPORT: 20}
-
     image_left_zed = sl.Mat()
     
-
-    # Custom Orange Color
-    hsvVals = {'hmin': 10, 'smin': 55, 'vmin': 215, 'hmax': 42, 'smax': 255, 'vmax': 255}
+    runtime_params = sl.RuntimeParameters()
 
     while zed.grab(runtime_params) == sl.ERROR_CODE.SUCCESS:
-        err = zed.retrieve_objects(objects, obj_runtime_param)
-
         zed.retrieve_image(image_left_zed, sl.VIEW.LEFT)
         img = image_left_zed.get_data()
         
-        imgRed, _ = myColorFinder.update(img, "red")
-        imgGreen, _ = myColorFinder.update(img, "green")
-        imgBlue, _ = myColorFinder.update(img, "blue")
-        imgOrange, _ = myColorFinder.update(img, hsvVals)
+        imgMask, _ = myColorFinder.update(img)
 
-        cv2.imshow("Red", imgOrange)
-        cv2.imshow("Image", img)
+        combinedWindow = cv2.hconcat([img, imgMask])
+        cv2.imshow("Color Module", cv2.resize(combinedWindow, (combinedWindow.shape[1] // 2, combinedWindow.shape[0] // 2), interpolation=cv2.INTER_AREA))
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

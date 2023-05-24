@@ -130,13 +130,13 @@ class Game:
     def generate_scoreboard(self, width=720, height=720):
         window = np.zeros(shape=(height, width, 3), dtype=np.uint8)
         cv2.putText(window, "Scoreboard", (150, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
         cv2.putText(window, "Ball With: Team A" if self.teamA.get_has_ball(
-        ) else "Ball With: Team B", (10, 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 1)
+        ) else "Ball With: Team B", (10, 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
         cv2.putText(window, "Team A: " + str(self.teamA.get_score()),
-                    (10, 300), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 1)
+                    (10, 300), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
         cv2.putText(window, "Team B: " + str(self.teamB.get_score()),
-                    (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 1)
+                    (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
         return window
 
     def determine_team(self, image, obj):
