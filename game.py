@@ -11,11 +11,11 @@ class Team:
         self.team_color = team_color
         self.score = 0
         self.has_ball = False
-        self.players = {} # {playerobj: 2d coordinates}
+        self.players = {}  # {playerobj: 2d coordinates}
 
     def get_has_ball(self):
         return self.has_ball
-    
+
     def set_has_ball(self, has_ball):
         self.has_ball = has_ball
 
@@ -31,8 +31,9 @@ class Team:
     def get_players(self):
         return self.player
 
-    def add_player(self, player):
-        self.players[player] = generate_2d_obj_position(player)
+    def add_player(self, player, window_width, window_height):
+        self.players[player] = generate_2d_obj_position(
+            player, window_width, window_height)
 
     def remove_player(self, player):
         self.players.pop(player)
@@ -43,12 +44,13 @@ class Team:
     def update_football_map(self, ground):
         for player in self.players:
             cv2.circle(ground, self.players[player], 20,  self.team_color, -1)
-            
+
     def check_ball(self, ball_pos):
         for player in self.players:
             if math.sqrt((self.players[player][0] - ball_pos[0])**2 + (self.players[player][1] - ball_pos[1])**2) < 80:
                 return True
         return False
+
 
 class Game:
     def __init__(self):
@@ -56,7 +58,7 @@ class Game:
                           'hmax': 179, 'smax': 255, 'vmax': 255}, (255, 0, 255))
         self.teamB = Team({'hmin': 0, 'smin': 0, 'vmin': 0,
                           'hmax': 179, 'smax': 255, 'vmax': 255}, (0, 255, 0))
-        
+
         self.trackingIds = {}
 
         self.color_finder = ColorFinder(False)
@@ -83,11 +85,12 @@ class Game:
                     try:
                         if obj.label == sl.OBJECT_CLASS.PERSON:
                             team = self.determine_team(image, obj)
-                            team.add_player(obj)
+                            team.add_player(obj, width, height)
                             self.trackingIds[obj.id] = team
 
                         else:
-                            ball_pos = generate_2d_obj_position(obj)
+                            ball_pos = generate_2d_obj_position(
+                                obj, width, height)
                             self.trackingIds[obj.id] = None
 
                     except Exception as e:
@@ -95,9 +98,9 @@ class Game:
 
                 else:
                     if obj.label == sl.OBJECT_CLASS.PERSON:
-                        self.trackingIds[obj.id].add_player(obj)
+                        self.trackingIds[obj.id].add_player(obj, width, height)
                     else:
-                        ball_pos = generate_2d_obj_position(obj)
+                        ball_pos = generate_2d_obj_position(obj, width, height)
 
         self.teamA.update_football_map(ground)
         self.teamB.update_football_map(ground)
@@ -109,7 +112,7 @@ class Game:
             elif self.teamB.check_ball(ball_pos):
                 self.teamA.set_has_ball(False)
                 self.teamB.set_has_ball(True)
-            
+
             # check for goal
             goal_radius = 50
             if math.sqrt((ball_pos[0] - center[0])**2 + (ball_pos[1] - center[1])**2) < goal_radius:
@@ -119,23 +122,21 @@ class Game:
                 elif self.teamB.get_has_ball():
                     self.teamB.goal()
                     self.teamB.set_has_ball(False)
-                    
-                
-                
+
         except Exception as e:
             pass
         return ground
 
-    def generate_scoreboard(self, width=540, height=720):
+    def generate_scoreboard(self, width=720, height=720):
         window = np.zeros(shape=(height, width, 3), dtype=np.uint8)
-        cv2.putText(window, "Scoreboard", (10, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1)
+        cv2.putText(window, "Scoreboard", (150, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 1)
         cv2.putText(window, "Ball With: Team A" if self.teamA.get_has_ball(
-        ) else "Ball With: Team B", (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 1)
+        ) else "Ball With: Team B", (10, 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 1)
         cv2.putText(window, "Team A: " + str(self.teamA.get_score()),
-                    (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1)
+                    (10, 300), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 1)
         cv2.putText(window, "Team B: " + str(self.teamB.get_score()),
-                    (270, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1)
+                    (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 1)
         return window
 
     def determine_team(self, image, obj):

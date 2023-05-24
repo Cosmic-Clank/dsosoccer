@@ -40,7 +40,7 @@ def main():
     obj_param.detection_model = sl.DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE
     # obj_param.prediction_timeout_s = 0.1  # TEST THIS
     # obj_param.image_sync = True # TEST THIS
-    obj_param.allow_reduced_precision_inference = True  # TEST THIS
+    # obj_param.allow_reduced_precision_inference = True  # TEST THIS
     # obj_param.filtering_mode = sl.OBJECT_FILTERING_MODE.NMS3D_PER_CLASS
     obj_param.enable_tracking = True
     if obj_param.enable_tracking:
@@ -77,8 +77,11 @@ def main():
         scoreboard = game.generate_scoreboard()
         cv_viewer.render_2D(image_left_ocv, objects, obj_param.enable_tracking)
 
-        cv2.imshow("Image", image_left_ocv)
-        cv2.imshow("Football ground", cv2.hconcat([football_map, scoreboard]))
+        game_board = cv2.vconcat([football_map, scoreboard])
+        resized_game_board = cv2.resize(game_board, (int(game_board.shape[1] / 2), int(game_board.shape[0] / 2)), interpolation=cv2.INTER_AREA)
+
+        # cv2.imshow("Image", image_left_ocv)
+        cv2.imshow("Football ground", cv2.hconcat([resized_game_board, cv2.cvtColor(image_left_ocv, cv2.COLOR_BGRA2BGR)]))
 
         FPSCOUNT += 1
         FPSSUM += zed.get_current_fps()
