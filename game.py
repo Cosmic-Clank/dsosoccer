@@ -10,46 +10,36 @@ class Team:
         self.color = color
         self.team_color = team_color
         self.score = 0
-        self.has_ball = False
-        self.players = {}  # {playerobj: 2d coordinates}
-
-    def get_has_ball(self):
-        return self.has_ball
-
-    def set_has_ball(self, has_ball):
-        self.has_ball = has_ball
+        self.players = {}  # {player_obj_id: 2d coordinates}
 
     def get_color(self):
         return self.color
 
     def get_score(self):
         return self.score
-
+    
+    def add_score(self, score):
+        self.score += score
+        
     def goal(self):
         self.score += 1
 
     def get_players(self):
         return self.player
 
-    def add_player(self, player, window_width, window_height):
-        self.players[player] = generate_2d_obj_position(
-            player, window_width, window_height)
-
-    def remove_player(self, player):
-        self.players.pop(player)
+    def add_player(self, player_obj, window_width, window_height):
+        self.players[player_obj.id] = generate_2d_obj_position(
+            player_obj, window_width, window_height)
 
     def clear_players(self):
         self.players.clear()
 
     def update_football_map(self, ground):
-        for player in self.players:
-            cv2.circle(ground, self.players[player], 20,  self.team_color, -1)
+        for player_id in self.players:
+            cv2.circle(ground, self.players[player_id], 20,  self.team_color, -1)
 
-    def check_ball(self, ball_pos):
-        for player in self.players:
-            if math.sqrt((self.players[player][0] - ball_pos[0])**2 + (self.players[player][1] - ball_pos[1])**2) < 80:
-                return True
-        return False
+    def get_player_coords(self, player_obj):
+        return self.players[player_obj.id]
 
 
 class Game:
@@ -59,38 +49,56 @@ class Game:
         self.teamB = Team({'hmin': 0, 'smin': 0, 'vmin': 0,
                           'hmax': 179, 'smax': 255, 'vmax': 255}, (0, 255, 0))
 
-        self.trackingIds = {}
+        self.trackingIds = {}  # {objid: team}
 
         self.color_finder = ColorFinder(False)
 
-    def generate_football_map(self, image, objects, is_tracking_on, width=720, height=720, radius=360):
-        center = (width//2, height//2)
+        # {pos: (x, y), with: ("team": team, "player": player_obj), "kickzone": "color"}
+        self.ball_data = {"pos": (720, 720), "with": {
+            "team": None, "player": None}, "kickzone": None}
 
-        ground = np.zeros(shape=(height, width, 3), dtype=np.uint8)
+        self.virtual_ground_radius = 360
+        self.goal_radius = 50
+        self.center = (self.virtual_ground_radius, self.virtual_ground_radius)
+        self.red_radius = self.virtual_ground_radius
+        self.yellow_radius = self.virtual_ground_radius * 2 // 3
+        self.blue_radius = self.virtual_ground_radius // 3
+
+    def generate_football_map(self, image, objects, is_tracking_on):
+        # Draws the football ground:
+        ground = np.zeros(shape=(self.virtual_ground_radius*2,
+                          self.virtual_ground_radius*2, 3), dtype=np.uint8)
 
         cv2.circle(
-            ground, (int(ground.shape[1]/2), int(ground.shape[0]/2)), radius, (0, 0, 255), -1)
-        cv2.circle(ground, (int(
-            ground.shape[1]/2), int(ground.shape[0]/2)), radius * 2 // 3, (0, 255, 255), -1)
-        cv2.circle(ground, (int(
-            ground.shape[1]/2), int(ground.shape[0]/2)), radius // 3, (255, 0, 50), -1)
-        cv2.rectangle(ground, (center[0]-2, center[1]-10),
-                      (center[0]+2, center[1]+10), (255, 255, 255), -1)
+            ground, self.center, self.red_radius, (0, 0, 255), -1)
+        cv2.circle(ground, self.center, self.yellow_radius *
+                   2 // 3, (0, 255, 255), -1)
+        cv2.circle(ground, self.center, self.blue_radius // 3, (255, 0, 50), -1)
+        cv2.rectangle(ground, (self.center[0]-2, self.center[1]-10),
+                      (self.center[0]+2, self.center[1]+10), (255, 255, 255), -1)
 
+        # Draws the players on the ground:
         self.teamA.clear_players()
         self.teamB.clear_players()
+
         for obj in objects.object_list:
             if (render_object(obj, is_tracking_on)):
                 if obj.id not in self.trackingIds:
                     try:
                         if obj.label == sl.OBJECT_CLASS.PERSON:
+                            # If object is not being tracked and is a person, figure out their team
                             team = self.determine_team(image, obj)
-                            team.add_player(obj, width, height)
+                            team.add_player(
+                                obj, self.virtual_ground_radius*2, self.virtual_ground_radius*2)
+
                             self.trackingIds[obj.id] = team
 
+                            # Determine if player has ball and update the ball's data
+                            self.update_ball_data(obj, team)
+
                         else:
-                            ball_pos = generate_2d_obj_position(
-                                obj, width, height)
+                            self.ball_data["pos"] = generate_2d_obj_position(
+                                obj, self.virtual_ground_radius*2, self.virtual_ground_radius*2)
                             self.trackingIds[obj.id] = None
 
                     except Exception as e:
@@ -98,41 +106,49 @@ class Game:
 
                 else:
                     if obj.label == sl.OBJECT_CLASS.PERSON:
-                        self.trackingIds[obj.id].add_player(obj, width, height)
-                    else:
-                        ball_pos = generate_2d_obj_position(obj, width, height)
+                        # If object is being tracked and is a person, add them to their previously determined team
+                        team = self.trackingIds[obj.id]
+                        team.add_player(
+                            obj, self.virtual_ground_radius*2, self.virtual_ground_radius*2)
 
+                        # Determine if player has ball and update the ball's data
+                        self.update_ball_data(obj, team)
+
+                    else:
+                        self.ball_data["pos"] = generate_2d_obj_position(
+                            obj, self.virtual_ground_radius*2, self.virtual_ground_radius*2)
+
+        # Draws each teams players on the ground
         self.teamA.update_football_map(ground)
         self.teamB.update_football_map(ground)
-        try:
-            cv2.circle(ground, ball_pos, 10, (255, 255, 255), -1)
-            if self.teamA.check_ball(ball_pos):
-                self.teamA.set_has_ball(True)
-                self.teamB.set_has_ball(False)
-            elif self.teamB.check_ball(ball_pos):
-                self.teamA.set_has_ball(False)
-                self.teamB.set_has_ball(True)
 
+        try:
             # check for goal
-            goal_radius = 50
-            if math.sqrt((ball_pos[0] - center[0])**2 + (ball_pos[1] - center[1])**2) < goal_radius:
-                if self.teamA.get_has_ball():
-                    self.teamA.goal()
-                    self.teamA.set_has_ball(False)
-                elif self.teamB.get_has_ball():
-                    self.teamB.goal()
-                    self.teamB.set_has_ball(False)
+            if euclidean_distance(self.ball_data["pos"], self.center) < self.goal_radius:
+                if self.ball_data["with"]["team"]:
+                    if self.ball_data["kickzone"] == "red":
+                        self.ball_data["with"]["team"].add_score(3)
+                    elif self.ball_data["kickzone"] == "yellow":
+                        self.self.ball_data["with"]["team"].add_score(2)
+                    self.ball_data["with"]["team"] = None
+                    self.ball_data["with"]["player"] = None
+                    
+            cv2.circle(ground, self.ball_data["pos"], 10, (255, 255, 255), -1)
+            cv2.circle(ground, self.ball_data["with"]["team"].get_player_coords(
+                self.ball_data["with"]["player"]), 40, (132, 241, 48), -1)
 
         except Exception as e:
             pass
+            # print(repr(e))
         return ground
 
-    def generate_scoreboard(self, width=720, height=720):
-        window = np.zeros(shape=(height, width, 3), dtype=np.uint8)
+    def generate_scoreboard(self):
+        window = np.zeros(shape=(self.virtual_ground_radius*2,
+                          self.virtual_ground_radius*2, 3), dtype=np.uint8)
         cv2.putText(window, "Scoreboard", (150, 100),
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
-        cv2.putText(window, "Ball With: Team A" if self.teamA.get_has_ball(
-        ) else "Ball With: Team B", (10, 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+        cv2.putText(window, "Ball With: Team A" if self.ball_data["with"]["team"] == self.teamA else "Ball With: Team B", (
+            10, 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
         cv2.putText(window, "Team A: " + str(self.teamA.get_score()),
                     (10, 300), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
         cv2.putText(window, "Team B: " + str(self.teamB.get_score()),
@@ -160,6 +176,19 @@ class Game:
         else:
             return self.teamB
 
+    def update_ball_data(self, player_obj, team):
+        player_2d_coords = team.get_player_coords(player_obj)
+        if euclidean_distance(player_2d_coords, self.ball_data["pos"]) < 80:
+            self.ball_data["with"]["team"] = team
+            self.ball_data["with"]["player"] = player_obj
+            center_distance = euclidean_distance(self.center, player_2d_coords)
+            if center_distance <= self.red_radius and center_distance > self.yellow_radius:
+                self.ball_data["kickzone"] = "red"
+            elif center_distance <= self.yellow_radius and center_distance > self.blue_radius:
+                self.ball_data["kickzone"] = "yellow"
+            elif center_distance <= self.blue_radius:
+                self.ball_data["kickzone"] = "blue"
+
     def cvt(self, pt):
         out = [pt[0], pt[1]]
         return out
@@ -168,14 +197,13 @@ class Game:
 def interpolate(x, fromrange, torange):
     frac = (x - fromrange[0]) / (fromrange[1] - fromrange[0])
     return ((torange[1] - torange[0]) * frac) + torange[0]
-    # return (x - fromrange[0]) * (torange[1] - torange[0]) / (fromrange[1] - fromrange[0]) + torange[0]
 
 
 def generate_2d_obj_position(obj, window_width=720, window_height=720, real_width=8, real_depth=8):
     x_pos = interpolate(
-        obj.position[0], [-real_width/2, real_width/2], [0, window_width])
-    y_pos = interpolate(abs(obj.position[2]), [
-        0, real_depth], [window_height, 0])
+        obj.position[0], (-real_width/2, real_width/2), (0, window_width))
+    y_pos = interpolate(abs(obj.position[2]), (
+        0, real_depth), (window_height, 0))
     return int(x_pos), int(y_pos)
 
 
@@ -184,3 +212,6 @@ def render_object(object_data, is_tracking_on):
         return (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK)
     else:
         return ((object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK) or (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF))
+
+def euclidean_distance(point1, point2):
+    return math.sqrt((point1[0]-point2[0])**2 + (point1[1]-point2[1])**2)
