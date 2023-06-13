@@ -90,7 +90,7 @@ def main():
         FPSCOUNT += 1
         FPSSUM += zed.get_current_fps()
 
-        if cv2.waitKey(1) == 27:
+        if cv2.waitKey(1) & 0xFF == 27:
             break
 
     print("Average FPS: ", FPSSUM / FPSCOUNT)

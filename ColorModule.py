@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import logging
 import sys
+import subprocess
 
 class ColorFinder:
     def __init__(self, trackBar=False):
@@ -24,7 +25,7 @@ class ColorFinder:
         To intialize Trackbars . Need to run only once
         """
         cv2.namedWindow("TrackBars")
-        cv2.resizeWindow("TrackBars", 640, 260)
+        cv2.resizeWindow("TrackBars", 640, 350)
         cv2.createTrackbar("Hue Min", "TrackBars", 0, 179, self.empty)
         cv2.createTrackbar("Hue Max", "TrackBars", 179, 179, self.empty)
         cv2.createTrackbar("Sat Min", "TrackBars", 0, 255, self.empty)
@@ -88,6 +89,9 @@ class ColorFinder:
 
         return output
 
+def copy2clip(txt):
+        cmd='echo '+txt.strip()+'|clip'
+        return subprocess.check_call(cmd, shell=True)
 
 def main():
     myColorFinder = ColorFinder(True)
@@ -128,10 +132,11 @@ def main():
 
         combinedWindow = cv2.hconcat([img, imgMask])
         cv2.imshow("Color Module", cv2.resize(combinedWindow, (combinedWindow.shape[1] // 2, combinedWindow.shape[0] // 2), interpolation=cv2.INTER_AREA))
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == 27:
             break
 
     print(myColorFinder.getTrackbarValues())
+    copy2clip(str(myColorFinder.getTrackbarValues()))
     cv2.destroyAllWindows()
     image_left_zed.free(memory_type=sl.MEM.CPU)
     zed.disable_object_detection()

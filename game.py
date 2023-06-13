@@ -51,24 +51,30 @@ class Team:
 
 class Game:
     def __init__(self):
-        self.teamA = Team("A", {'hmin': 0, 'smin': 0, 'vmin': 197,
-                          'hmax': 179, 'smax': 255, 'vmax': 255}, (255, 0, 255))
-        self.teamB = Team("B", {'hmin': 0, 'smin': 0, 'vmin': 0,
-                          'hmax': 179, 'smax': 255, 'vmax': 255}, (0, 255, 0))
+        self.teamA = Team("A",
+                          {'hmin': 0, 'smin': 0, 'vmin': 197,
+                              'hmax': 179, 'smax': 255, 'vmax': 255},
+                          (255, 0, 255))
+        self.teamB = Team("B",
+                          {'hmin': 0, 'smin': 0, 'vmin': 0,
+                              'hmax': 179, 'smax': 255, 'vmax': 255},
+                          (0, 255, 0))
 
         self.color_finder = ColorFinder(False)
 
         # {pos: (x, y), with: ("team": team, "player": player_obj), "kickzone": "color"}
         self.ball_data = {"pos": (720, 720), "team": None, "kickzone": None}
 
-        self.window_size = (720, 720) # SIZE OF THE VIRTUAL GROUND. MAKE SURE ALWAYS SQUARE
-        
-        self.real_size = (8, 8) # Real size (as a square) of the football ground in meters
+        # SIZE OF THE VIRTUAL GROUND. MAKE SURE ALWAYS SQUARE
+        self.window_size = (720, 720)
+
+        # Real size (as a square) of the football ground in meters
+        self.real_size = (8, 8)
 
         self.virtual_ground_radius = self.window_size[0] // 2
         self.goal_radius = 40
         self.player_radius = 50
-        
+
         self.center = (self.virtual_ground_radius, self.virtual_ground_radius)
         self.red_radius = self.virtual_ground_radius
         self.yellow_radius = self.virtual_ground_radius * 2 // 3
@@ -77,8 +83,8 @@ class Game:
 
     def generate_football_map(self, image, objects, is_tracking_on):
         # Draws the football ground:
-        ground = np.zeros(shape=(self.window_size[0],
-                          self.window_size[1], 3), dtype=np.uint8)
+        ground = np.zeros(
+            shape=(self.window_size[0], self.window_size[1], 3), dtype=np.uint8)
 
         cv2.circle(
             ground, self.center, self.red_radius, (0, 0, 255), -1)
@@ -87,7 +93,7 @@ class Game:
         cv2.circle(ground, self.center, self.blue_radius, (255, 0, 50), -1)
         cv2.rectangle(ground, (self.center[0]-2, self.center[1]-10),
                       (self.center[0]+2, self.center[1]+10), (255, 255, 255), -1)
-        
+
         cv2.circle(ground, self.center, self.goal_radius, (255, 0, 255), 2)
 
         # Draws the players on the ground:
@@ -95,19 +101,19 @@ class Game:
         self.teamB.clear_players()
 
         for obj in objects.object_list:
-            if render_object(obj, is_tracking_on): # ID DONT KNOW WHY, BUT REMOVING THIS BREAKS THE CODE!!?? JUST DON'T REMOVE IT!!
+            # ID DONT KNOW WHY, BUT REMOVING THIS BREAKS THE CODE!!?? JUST DON'T REMOVE IT!!
+            if render_object(obj, is_tracking_on):
                 try:
                     if obj.label == sl.OBJECT_CLASS.PERSON:
                         team = self.determine_team(image, obj)
                         team.add_player(
                             obj, self.window_size, self.real_size)
-                        
+
                         # Determine if player has ball and update the ball's data
                         self.update_ball_data(team)
                     else:
                         self.ball_data["pos"] = generate_2d_obj_position(
                             obj, self.window_size, self.real_size)
-                    
 
                 except Exception as e:
                     print(repr(e))
@@ -119,31 +125,36 @@ class Game:
                 if self.ball_data["team"]:
                     if self.ball_data["kickzone"] == "red":
                         self.ball_data["team"].add_score(3)
-                        print("GOAL BY TEAM:", self.ball_data["team"].get_name(), "for 3 points!")
+                        print("GOAL BY TEAM:",
+                              self.ball_data["team"].get_name(), "for 3 points!")
                     elif self.ball_data["kickzone"] == "yellow":
                         self.ball_data["team"].add_score(2)
-                        print("GOAL BY TEAM:", self.ball_data["team"].get_name(), "for 2 points!")
+                        print("GOAL BY TEAM:",
+                              self.ball_data["team"].get_name(), "for 2 points!")
                     elif self.ball_data["kickzone"] == "green":
                         self.ball_data["team"].add_score(1)
-                        print("GOAL BY TEAM:", self.ball_data["team"].get_name(), "for 1 points!")
+                        print("GOAL BY TEAM:",
+                              self.ball_data["team"].get_name(), "for 1 points!")
                     else:
-                        print("GOAL FROM PENALTY ZONE BY TEAM:", self.ball_data["team"].get_name())
+                        print("GOAL FROM PENALTY ZONE BY TEAM:",
+                              self.ball_data["team"].get_name())
                     self.ball_data["team"] = None
 
         except Exception as e:
             print(repr(e))
             print("LINE 136")
             # print(repr(e))
-            
+
         # Draws each teams players and the ball on the ground
         self.teamA.update_football_map(ground, self.player_radius)
         self.teamB.update_football_map(ground, self.player_radius)
         cv2.circle(ground, self.ball_data["pos"], 10, (255, 255, 255), -1)
-        
+
         return ground
 
     def generate_scoreboard(self):
-        window = np.zeros(shape=(self.virtual_ground_radius*2, self.virtual_ground_radius*2, 3), dtype=np.uint8)
+        window = np.zeros(shape=(self.virtual_ground_radius*2,
+                          self.virtual_ground_radius*2, 3), dtype=np.uint8)
         cv2.putText(window, "Scoreboard", (150, 100),
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
         cv2.putText(window, "Ball With: Team A" if self.ball_data["team"] == self.teamA else "Ball With: Team B", (
@@ -152,10 +163,10 @@ class Game:
                     (10, 300), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
         cv2.putText(window, "Team B: " + str(self.teamB.get_score()),
                     (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
-        
+
         cv2.putText(window, self.ball_data["kickzone"],
                     (10, 500), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
-        
+
         return window
 
     def determine_team(self, image, obj):
@@ -164,10 +175,11 @@ class Game:
         bottom_right_corner = self.cvt(obj.bounding_box_2d[2])
         bottom_left_corner = self.cvt(obj.bounding_box_2d[3])
 
-        roi_height = int(top_right_corner[0] - top_left_corner[0])
-        roi_width = int(bottom_left_corner[1] - top_left_corner[1])
+        roi_width = int(top_right_corner[0] - top_left_corner[0])
+        roi_height = int(
+            (bottom_left_corner[1] - top_left_corner[1]) * (3 / 5))
         roi = image[int(top_left_corner[1]):int(
-            top_left_corner[1] + roi_width), int(top_left_corner[0]):int(top_left_corner[0] + roi_height)]
+            top_left_corner[1] + roi_height), int(top_left_corner[0]):int(top_left_corner[0] + roi_width)]
 
         _, maskA = self.color_finder.update(roi, self.teamA.get_color())
         _, maskB = self.color_finder.update(roi, self.teamB.get_color())
@@ -197,15 +209,16 @@ class Game:
         out = [pt[0], pt[1]]
         return out
 
+
 def generate_2d_obj_position(obj, window_size, real_size):
     window_width, window_height = window_size
     real_width, real_depth = real_size
-    
+
     x_pos = np.interp(
         obj.position[0], (-real_width/2, real_width/2), (0, window_width))
     y_pos = np.interp(abs(obj.position[2]), (
         0, real_depth), (window_height, 0))
-    
+
     return int(x_pos), int(y_pos)
 
 
