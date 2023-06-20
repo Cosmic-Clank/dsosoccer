@@ -4,14 +4,13 @@ import pyzed.sl as sl
 from ColorModule import ColorFinder
 import math
 
-
 class Team:
     def __init__(self, name, color, team_color):
         self.name = name
         self.color = color
         self.team_color = team_color
         self.score = 0
-        self.players = []  # tuple of 2d x, y coords of each player
+        self.players = []  # tuple of 2d (x, y) coords of each player
 
     def get_name(self):
         return self.name
@@ -101,7 +100,7 @@ class Game:
         self.teamB.clear_players()
 
         for obj in objects.object_list:
-            # ID DONT KNOW WHY, BUT REMOVING THIS BREAKS THE CODE!!?? JUST DON'T REMOVE IT!!
+            # ID DONT KNOW WHY, BUT REMOVING THE FOLLOWING CONDITION BREAKS THE CODE!!?? JUST DON'T REMOVE IT!!
             if render_object(obj, is_tracking_on):
                 try:
                     if obj.label == sl.OBJECT_CLASS.PERSON:
@@ -153,18 +152,18 @@ class Game:
         return ground
 
     def generate_scoreboard(self):
-        window = np.zeros(shape=(self.virtual_ground_radius*2,
-                          self.virtual_ground_radius*2, 3), dtype=np.uint8)
+        window = np.zeros(shape=(self.window_size[0],
+                          self.window_size[1], 3), dtype=np.uint8)
         cv2.putText(window, "Scoreboard", (150, 100),
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
-        cv2.putText(window, "Ball With: Team A" if self.ball_data["team"] == self.teamA else "Ball With: Team B", (
+        cv2.putText(window, "Ball With: Team " + self.ball_data["team"].get_name() if self.ball_data["team"] else "", (
             10, 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-        cv2.putText(window, "Team A: " + str(self.teamA.get_score()),
+        cv2.putText(window, "Team " + self.teamA.get_name() + ": " + str(self.teamA.get_score()),
                     (10, 300), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
-        cv2.putText(window, "Team B: " + str(self.teamB.get_score()),
+        cv2.putText(window, "Team " + self.teamB.get_name() + ": " + str(self.teamB.get_score()),
                     (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
 
-        cv2.putText(window, self.ball_data["kickzone"],
+        cv2.putText(window, "Current zone: " + str(self.ball_data["kickzone"]),
                     (10, 500), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
 
         return window

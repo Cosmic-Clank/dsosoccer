@@ -66,6 +66,7 @@ def main():
     image_left_zed = sl.Mat()
     
     game = Game()
+    # game = None
 
     while zed.grab(runtime_params) == sl.ERROR_CODE.SUCCESS:
         err = zed.retrieve_objects(objects, obj_runtime_param)
@@ -75,17 +76,21 @@ def main():
 
         cv_viewer.render_2D(image_left_ocv, objects, obj_param.enable_tracking)
         
-        football_map = game.generate_football_map(image_left_ocv, objects, obj_param.enable_tracking)
-        scoreboard = game.generate_scoreboard()
+        if game:
+            football_map = game.generate_football_map(image_left_ocv, objects, obj_param.enable_tracking)
+            scoreboard = game.generate_scoreboard()
+            
+            resized_football_map = cv2.resize(football_map, (360, 360), interpolation=cv2.INTER_AREA)
+            resized_scoreboard = cv2.resize(scoreboard, (360, 360), interpolation=cv2.INTER_AREA)
+
+            game_board = cv2.vconcat([resized_football_map, resized_scoreboard])
+            resized_image_left_ocv = cv2.resize(image_left_ocv, (1280, 720), interpolation=cv2.INTER_AREA)
+
+            cv2.imshow("Football ground", cv2.hconcat([game_board, cv2.cvtColor(resized_image_left_ocv, cv2.COLOR_BGRA2BGR)]))
+        else:
+            resized_image_left_ocv = cv2.resize(image_left_ocv, (1280, 720), interpolation=cv2.INTER_AREA)
+            cv2.imshow("Image", resized_image_left_ocv)
         
-        resized_football_map = cv2.resize(football_map, (360, 360), interpolation=cv2.INTER_AREA)
-        resized_scoreboard = cv2.resize(scoreboard, (360, 360), interpolation=cv2.INTER_AREA)
-
-        game_board = cv2.vconcat([resized_football_map, resized_scoreboard])
-        resized_image_left_ocv = cv2.resize(image_left_ocv, (1280, 720), interpolation=cv2.INTER_AREA)
-
-        # cv2.imshow("Image", image_left_ocv)
-        cv2.imshow("Football ground", cv2.hconcat([game_board, cv2.cvtColor(resized_image_left_ocv, cv2.COLOR_BGRA2BGR)]))
 
         FPSCOUNT += 1
         FPSSUM += zed.get_current_fps()
