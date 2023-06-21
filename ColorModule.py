@@ -132,10 +132,13 @@ def main():
 
         combinedWindow = cv2.hconcat([img, imgMask])
         cv2.imshow("Color Module", cv2.resize(combinedWindow, (combinedWindow.shape[1] // 2, combinedWindow.shape[0] // 2), interpolation=cv2.INTER_AREA))
+        
+        
         if cv2.waitKey(1) & 0xFF == 27:
             break
 
     print(myColorFinder.getTrackbarValues())
+    print([i for i in imgMask2])
     copy2clip(str(myColorFinder.getTrackbarValues()))
     cv2.destroyAllWindows()
     image_left_zed.free(memory_type=sl.MEM.CPU)

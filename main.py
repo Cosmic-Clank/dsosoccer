@@ -72,24 +72,25 @@ def main():
         err = zed.retrieve_objects(objects, obj_runtime_param)
 
         zed.retrieve_image(image_left_zed, sl.VIEW.LEFT)
-        image_left_ocv = image_left_zed.get_data()
+        image_left_ocv_without_inference = image_left_zed.get_data()
+        image_left_ocv_with_inference = image_left_ocv_without_inference.copy()
 
-        cv_viewer.render_2D(image_left_ocv, objects, obj_param.enable_tracking)
+        cv_viewer.render_2D(image_left_ocv_with_inference, objects, obj_param.enable_tracking)
         
         if game:
-            football_map = game.generate_football_map(image_left_ocv, objects, obj_param.enable_tracking)
+            football_map = game.generate_football_map(image_left_ocv_without_inference, objects, obj_param.enable_tracking)
             scoreboard = game.generate_scoreboard()
             
             resized_football_map = cv2.resize(football_map, (360, 360), interpolation=cv2.INTER_AREA)
             resized_scoreboard = cv2.resize(scoreboard, (360, 360), interpolation=cv2.INTER_AREA)
 
             game_board = cv2.vconcat([resized_football_map, resized_scoreboard])
-            resized_image_left_ocv = cv2.resize(image_left_ocv, (1280, 720), interpolation=cv2.INTER_AREA)
+            resized_image_left_ocv_with_inference = cv2.resize(image_left_ocv_with_inference, (1280, 720), interpolation=cv2.INTER_AREA)
 
-            cv2.imshow("Football ground", cv2.hconcat([game_board, cv2.cvtColor(resized_image_left_ocv, cv2.COLOR_BGRA2BGR)]))
+            cv2.imshow("Football ground", cv2.hconcat([game_board, cv2.cvtColor(resized_image_left_ocv_with_inference, cv2.COLOR_BGRA2BGR)]))
         else:
-            resized_image_left_ocv = cv2.resize(image_left_ocv, (1280, 720), interpolation=cv2.INTER_AREA)
-            cv2.imshow("Image", resized_image_left_ocv)
+            resized_image_left_ocv_with_inference = cv2.resize(image_left_ocv_with_inference, (1280, 720), interpolation=cv2.INTER_AREA)
+            cv2.imshow("Image", resized_image_left_ocv_with_inference)
         
 
         FPSCOUNT += 1

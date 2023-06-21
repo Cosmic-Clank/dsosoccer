@@ -50,13 +50,11 @@ class Team:
 
 class Game:
     def __init__(self):
-        self.teamA = Team("A",
-                          {'hmin': 0, 'smin': 0, 'vmin': 197,
-                              'hmax': 179, 'smax': 255, 'vmax': 255},
+        self.teamA = Team("Red",
+                          {'hmin': 129, 'smin': 191, 'vmin': 0, 'hmax': 179, 'smax': 255, 'vmax': 255},
                           (255, 0, 255))
-        self.teamB = Team("B",
-                          {'hmin': 0, 'smin': 0, 'vmin': 0,
-                              'hmax': 179, 'smax': 255, 'vmax': 255},
+        self.teamB = Team("White",
+                          {'hmin': 0, 'smin': 56, 'vmin': 83, 'hmax': 23, 'smax': 109, 'vmax': 148},
                           (0, 255, 0))
 
         self.color_finder = ColorFinder(False)
@@ -68,7 +66,7 @@ class Game:
         self.window_size = (720, 720)
 
         # Real size (as a square) of the football ground in meters
-        self.real_size = (8, 8)
+        self.real_size = (9, 9)
 
         self.virtual_ground_radius = self.window_size[0] // 2
         self.goal_radius = 40
@@ -117,7 +115,7 @@ class Game:
                 except Exception as e:
                     print(repr(e))
                     print("LINE 115")
-
+                    
         try:
             # check for goal
             if euclidean_distance(self.ball_data["pos"], self.center) <= self.goal_radius:
@@ -176,16 +174,18 @@ class Game:
 
         roi_width = int(top_right_corner[0] - top_left_corner[0])
         roi_height = int(
-            (bottom_left_corner[1] - top_left_corner[1]) * (3 / 5))
+            (bottom_left_corner[1] - top_left_corner[1]))
         roi = image[int(top_left_corner[1]):int(
             top_left_corner[1] + roi_height), int(top_left_corner[0]):int(top_left_corner[0] + roi_width)]
 
         _, maskA = self.color_finder.update(roi, self.teamA.get_color())
         _, maskB = self.color_finder.update(roi, self.teamB.get_color())
-        # cv2.imshow("maskA", maskA)
+        cv2.imshow("maskA", maskA)
         # cv2.imshow("maskB", maskB)
 
-        if (maskA.sum() > maskB.sum()):
+
+        print(maskA.sum())
+        if (maskA.sum() > 0 * len(maskA)):
             return self.teamA
         else:
             return self.teamB
