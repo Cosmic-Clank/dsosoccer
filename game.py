@@ -180,7 +180,7 @@ class Game:
 
         _, maskA = self.color_finder.update(roi, self.teamA.get_color())
         _, maskB = self.color_finder.update(roi, self.teamB.get_color())
-        cv2.imshow("maskA", maskA)
+        # cv2.imshow("maskA", maskA)
         # cv2.imshow("maskB", maskB)
 
 

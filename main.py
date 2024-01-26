@@ -36,8 +36,8 @@ def main():
     runtime_params = sl.RuntimeParameters()
 
     obj_param = sl.ObjectDetectionParameters()
-    obj_param.enable_mask_output = False  # TEST THIS
-    obj_param.detection_model = sl.DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE
+    # obj_param.enable_mask_output = False  # TEST THIS
+    obj_param.detection_model = sl.OBJECT_DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE
     # obj_param.prediction_timeout_s = 0.1  # TEST THIS
     # obj_param.image_sync = True # TEST THIS
     # obj_param.allow_reduced_precision_inference = True  # TEST THIS
