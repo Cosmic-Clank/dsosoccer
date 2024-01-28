@@ -50,8 +50,8 @@ class Team:
 
 class Game:
     def __init__(self):
-        self.teamA = Team("Red",
-                          {'hmin': 129, 'smin': 191, 'vmin': 0, 'hmax': 179, 'smax': 255, 'vmax': 255},
+        self.teamA = Team("Black",
+                          {'hmin': 92, 'smin': 54, 'vmin': 0, 'hmax': 149, 'smax': 136, 'vmax': 102},
                           (255, 0, 255))
         self.teamB = Team("White",
                           {'hmin': 0, 'smin': 56, 'vmin': 83, 'hmax': 23, 'smax': 109, 'vmax': 148},
@@ -184,7 +184,7 @@ class Game:
         # cv2.imshow("maskB", maskB)
 
 
-        print(maskA.sum())
+        # print(maskA.sum())
         if (maskA.sum() > 0 * len(maskA)):
             return self.teamA
         else:

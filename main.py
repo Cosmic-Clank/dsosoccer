@@ -57,11 +57,11 @@ def main():
 
     objects = sl.Objects()
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
-    obj_runtime_param.detection_confidence_threshold = 40
+    # obj_runtime_param.detection_confidence_threshold = 40
     obj_runtime_param.object_class_filter = [
         sl.OBJECT_CLASS.PERSON, sl.OBJECT_CLASS.SPORT]
     obj_runtime_param.object_class_detection_confidence_threshold = {
-        sl.OBJECT_CLASS.PERSON: 60, sl.OBJECT_CLASS.SPORT: 0}
+        sl.OBJECT_CLASS.PERSON: 60, sl.OBJECT_CLASS.SPORT: 10}
 
     image_left_zed = sl.Mat()
     

@@ -138,7 +138,7 @@ def main():
             break
 
     print(myColorFinder.getTrackbarValues())
-    print([i for i in imgMask2])
+    # print([i for i in imgMask])
     copy2clip(str(myColorFinder.getTrackbarValues()))
     cv2.destroyAllWindows()
     image_left_zed.free(memory_type=sl.MEM.CPU)
